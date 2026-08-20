@@ -487,7 +487,7 @@
   // ---------- STORAGE (localStorage — works standalone on any hosting) ----------
   const STORAGE_KEY = 'politicos-escandalosos-data-v1';
   const VERSION_KEY = 'politicos-escandalosos-seed-version';
-  const CURRENT_SEED_VERSION = 5; // bump this whenever canonicalSeed() below gets new people/connections, or when removeDeprecated() changes
+  const CURRENT_SEED_VERSION = 6; // bump this whenever canonicalSeed() below gets new people/connections, or when removeDeprecated() changes
 
   function loadData(){
     try{
@@ -650,6 +650,21 @@
         photo:'' },
       { id:'p19', name:'Ciro Nogueira', party:'PP',
         desc:'Senador pelo Piauí e presidente nacional do PP (Progressistas), ex-ministro da Casa Civil no governo Bolsonaro. Apontado como um dos maiores aliados políticos de Daniel Vorcaro, tornou-se alvo da 5ª fase da Operação Compliance Zero (PF), em maio de 2026, no caso do Banco Master. Transita nas duas pontas do escândalo. Do lado do Master: segundo o STF (min. André Mendonça), reproduziu no Senado a chamada "emenda Master" — emenda à PEC 65/2023 que ampliava a cobertura do FGC (Fundo Garantidor de Créditos) de R$ 250 mil para R$ 1 milhão —, cujo texto teria sido elaborado pela assessoria do próprio Master, e não por seu gabinete; ele chegou a reapresentar a proposta em 2026, após o banco ser liquidado pelo Banco Central. Do lado do BRB: segundo fontes do governo do DF, teria apadrinhado a indicação de Paulo Henrique Costa para a presidência do banco e aproximado Vorcaro de Ibaneis Rocha — o que a defesa do senador nega. A PF investiga supostas vantagens recebidas, como pagamentos mensais e uso de imóvel de luxo.',
+        photo:'' },
+      { id:'p20', name:'Arthur Lira', party:'PP',
+        desc:'Deputado federal por Alagoas e ex-presidente da Câmara dos Deputados (PP), uma das principais lideranças do Centrão. No caso do Banco Master, é apontado como parte da articulação para socorrer o banco pela Caixa Econômica Federal, onde tem forte influência: apadrinhou a indicação de Carlos Antônio Vieira Fernandes para a presidência da Caixa. Ao lado de Ciro Nogueira (PP), teria buscado na Caixa uma alternativa ao BRB para sustentar o Master.',
+        photo:'' },
+      { id:'p21', name:'Carlos Antônio Vieira Fernandes', party:'Sem partido',
+        desc:'Economista de carreira da Caixa, assumiu a presidência da Caixa Econômica Federal em 2024, apadrinhado por Arthur Lira e pelo Centrão. Sua gestão coincidiu com a tentativa da Caixa de comprar R$ 500 milhões em letras financeiras do Banco Master. Posteriormente tornou-se alvo de operação da Polícia Federal.',
+        photo:'' },
+      { id:'p22', name:'Tarso Duarte de Tassis', party:'Sem partido',
+        desc:'Advogado nomeado vice-presidente de Negócios de Atacado da Caixa, um dos cargos indicados pelo PP (partido de Ciro Nogueira). O comunicado oficial da Caixa afirmou que ele havia sido "assessor especial da presidência do Banco Master" nas áreas financeira e jurídica — versão contestada por Daniel Vorcaro, que disse que Tassis nunca assessorou a presidência do banco, tendo sido apenas sócio de um escritório que prestou alguns serviços.',
+        photo:'' },
+      { id:'p23', name:'Pablo Sarmento', party:'Sem partido',
+        desc:'Diretor-presidente da Caixa Asset, a gestora de recursos da Caixa. Propôs a compra de R$ 500 milhões em letras financeiras do Banco Master — operação que a área técnica classificou como "atípica" e de "alto risco de solvência". Em julho de 2024, três funcionários que se recusaram a avalizar o negócio foram afastados. Sarmento foi destituído do cargo em novembro de 2024, também em meio a denúncias de assédio moral e abuso de poder.',
+        photo:'' },
+      { id:'p24', name:'Igor Macedo Laino', party:'Sem partido',
+        desc:'Ex-diretor da Caixa Asset. Ao lado da cúpula da gestora, tentou aprovar a compra de R$ 500 milhões em letras do Banco Master, ignorando pareceres técnicos que apontavam baixa liquidez, prazo excessivo e alto risco reputacional. Foi destituído em 2025 e multado pelo TCU (relator min. Antonio Anastasia) em R$ 10 mil por falhas na diligência da operação. A defesa nega irregularidades e afirma que o negócio nunca se concretizou.',
         photo:'' }
     ];
     const connections = [
@@ -681,7 +696,15 @@
       { id:'c27', from:'p7', to:'p17', label:'vínculo familiar (irmãos)' },
       { id:'c28', from:'p6', to:'p18', label:'elogio público — "maior prefeito da história de SP"' },
       { id:'c29', from:'p19', to:'p1', label:'aliado político / articulou a "emenda Master" (FGC R$250 mil → R$1 mi)' },
-      { id:'c30', from:'p19', to:'p2', label:'articulação no BRB (indicou presidente do banco; defesa nega)' }
+      { id:'c30', from:'p19', to:'p2', label:'articulação no BRB (indicou presidente do banco; defesa nega)' },
+      { id:'c31', from:'p20', to:'p1', label:'articulação para socorrer o Master via Caixa' },
+      { id:'c32', from:'p20', to:'p21', label:'apadrinhou a indicação (presidência da Caixa)' },
+      { id:'c33', from:'p19', to:'p22', label:'indicação (vice-presidência de Atacado da Caixa)' },
+      { id:'c34', from:'p22', to:'p1', label:'apontado como ex-assessor do Master (Vorcaro contesta)' },
+      { id:'c35', from:'p23', to:'p1', label:'propôs compra de R$500 mi em letras do Master' },
+      { id:'c36', from:'p24', to:'p1', label:'tentou aprovar R$500 mi; multado pelo TCU' },
+      { id:'c37', from:'p23', to:'p24', label:'cúpula da Caixa Asset na operação do Master' },
+      { id:'c38', from:'p20', to:'p19', label:'aliados no PP / mesma articulação pró-Master' }
     ];
     return { people, connections };
   }
