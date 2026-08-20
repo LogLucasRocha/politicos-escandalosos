@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Políticos Escandalosos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root{
+    --bg:#0b0d12;
+    --panel:#12151b;
+    --panel-2:#171b22;
+    --border:#232830;
+    --text:#e8ebf0;
+    --muted:#8a93a3;
+    --muted-2:#5c6572;
+    --accent:#38b2ac;
+    --accent-dim: rgba(56,178,172,0.15);
+    --danger:#d9544f;
+    --link-color:#3a4250;
+    --link-color-hover:#6b7686;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    overflow:hidden;
+    font-size:14px;
+  }
+  .mono{font-family:'JetBrains Mono', monospace;}
+
+  .app{display:flex; flex-direction:column; height:100vh;}
+
+  /* TOPBAR */
+  .topbar{
+    display:flex; align-items:center; gap:20px;
+    padding:12px 20px; border-bottom:1px solid var(--border);
+    background:var(--panel); flex:none; flex-wrap:wrap;
+  }
+  .brand{display:flex; flex-direction:column; margin-right:auto;}
+  .brand h1{font-size:15px; font-weight:600; margin:0; letter-spacing:0.2px;}
+  .brand .sub{font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; letter-spacing:0.5px; margin-top:2px;}
+
+  .search-wrap{position:relative; width:260px;}
+  .search-wrap input{
+    width:100%; padding:8px 12px 8px 32px; border-radius:6px;
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    font-size:13px; font-family:'Inter',sans-serif; outline:none;
+  }
+  .search-wrap input:focus{border-color:var(--accent);}
+  .search-wrap::before{
+    content:''; position:absolute; left:10px; top:50%; transform:translateY(-50%);
+    width:13px; height:13px; border:1.5px solid var(--muted); border-radius:50%;
+  }
+  .search-wrap::after{
+    content:''; position:absolute; left:19px; top:calc(50% + 5px); width:5px; height:1.5px;
+    background:var(--muted); transform:rotate(45deg);
+  }
+  .search-result{
+    position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:50;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:6px;
+    padding:10px 12px; font-size:12px; line-height:1.5; display:none;
+    box-shadow:0 12px 30px rgba(0,0,0,0.5);
+  }
+  .search-result.show{display:block;}
+  .search-result .sr-title{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:4px;}
+  .search-result.miss .sr-title{color:var(--danger);}
+  .search-result .sr-item{padding:4px 0; cursor:pointer; color:var(--text);}
+  .search-result .sr-item:hover{color:var(--accent);}
+
+  .topbar-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:12.5px;
+    padding:8px 13px; border-radius:6px; border:1px solid transparent; cursor:pointer;
+    background:var(--accent); color:#08110f; transition:filter .15s, transform .1s;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .btn:active{transform:scale(0.97);}
+  .btn.ghost{background:transparent; border-color:var(--border); color:var(--text);}
+  .btn.ghost:hover{border-color:var(--muted-2); filter:none;}
+  .btn.danger{background:var(--danger); color:#1a0403;}
+
+  /* LAYOUT */
+  .layout{display:flex; flex:1; min-height:0;}
+  .sidebar{
+    width:270px; flex:none; border-right:1px solid var(--border);
+    background:var(--panel); overflow-y:auto; padding:16px;
+  }
+  .panel-block{margin-bottom:26px;}
+  .about-block{
+    padding-bottom:18px; margin-bottom:22px; border-bottom:1px solid var(--border);
+  }
+  .about-text{
+    font-size:12px; line-height:1.6; color:var(--muted); margin:0 0 10px;
+  }
+  .about-text:last-child{margin-bottom:0;}
+  .about-text b{color:var(--text);}
+  .panel-block h2{
+    font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted);
+    margin:0 0 12px; font-weight:600; display:flex; justify-content:space-between; align-items:center;
+  }
+  .panel-block h2 .n{color:var(--muted-2); font-family:'JetBrains Mono',monospace; font-weight:400;}
+
+  .party-row{
+    display:flex; align-items:center; gap:9px; padding:6px 0; cursor:pointer;
+    user-select:none; opacity:1; transition:opacity .15s;
+  }
+  .party-row.off{opacity:0.35;}
+  .party-row .dot{width:9px; height:9px; border-radius:50%; flex:none;}
+  .party-row .name{flex:1; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .party-row .count{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted); flex:none;}
+  .party-bar-track{height:3px; background:var(--border); border-radius:2px; margin:0 0 8px; overflow:hidden;}
+  .party-bar-fill{height:100%; border-radius:2px;}
+
+  .legend-list{list-style:none; margin:0; padding:0; font-size:12px; color:var(--muted); line-height:1.9;}
+  .legend-list li{display:flex; align-items:center; gap:8px;}
+  .legend-arrow{width:20px; height:1px; background:var(--muted-2); position:relative; flex:none;}
+  .legend-arrow::after{
+    content:''; position:absolute; right:-1px; top:-2.5px; border:3px solid transparent;
+    border-left-color:var(--muted-2); border-right:none;
+  }
+
+  .stat-total{font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--text); font-weight:600;}
+  .stat-label{font-size:11px; color:var(--muted); margin-top:2px;}
+
+  /* GRAPH AREA */
+  .graph-area{
+    position:relative; flex:1; min-width:0;
+    background:
+      radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px) 0 0/22px 22px,
+      var(--bg);
+  }
+  #graph{width:100%; height:100%; display:block; cursor:grab;}
+  #graph.grabbing{cursor:grabbing;}
+
+  .empty-state{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; color:var(--muted); font-size:13px; pointer-events:none;
+  }
+  .empty-state .big{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted-2); text-transform:uppercase; margin-bottom:6px;}
+
+  .graph-controls{
+    position:absolute; bottom:18px; right:18px; display:flex; flex-direction:column; gap:1px;
+    background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden;
+  }
+  .graph-controls button{
+    width:32px; height:32px; background:transparent; border:none; color:var(--text);
+    font-size:15px; cursor:pointer; border-bottom:1px solid var(--border);
+  }
+  .graph-controls button:last-child{border-bottom:none;}
+  .graph-controls button:hover{background:var(--panel-2); color:var(--accent);}
+
+  .node{cursor:grab;}
+  .node.dragging{cursor:grabbing;}
+  .node .avatar-ring{fill:none; stroke-width:2px; transition:stroke-width .15s;}
+  .node.highlighted .avatar-ring{stroke-width:3.5px; filter:drop-shadow(0 0 6px currentColor);}
+  .node .avatar-box{
+    width:100%; height:100%; border-radius:50%; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    background:#1c2129; color:var(--text); font-family:'JetBrains Mono',monospace; font-weight:600;
+  }
+  .node .avatar-box img{width:100%; height:100%; object-fit:cover;}
+  .node text.node-name{fill:var(--text); font-size:12px; font-weight:600; font-family:'Inter',sans-serif;}
+  .node text.node-party{fill:var(--muted); font-size:10px; font-family:'JetBrains Mono',monospace;}
+  .node .remove-btn{opacity:0; cursor:pointer;}
+  .node:hover .remove-btn{opacity:1;}
+  .node .remove-btn circle{fill:var(--danger);}
+  .node .remove-btn text{fill:#1a0403; font-size:10px; font-weight:700; text-anchor:middle; dominant-baseline:central;}
+
+  .link{stroke:var(--link-color); stroke-width:1.6px; fill:none; cursor:pointer;}
+  .link:hover{stroke:var(--link-color-hover); stroke-width:2.2px;}
+  .link-hit{stroke:transparent; stroke-width:14px; fill:none; cursor:pointer;}
+  .link-label{fill:var(--muted-2); font-size:9.5px; font-family:'JetBrains Mono',monospace; pointer-events:none; opacity:0; transition:opacity .12s;}
+  .link-label-bg{opacity:0; transition:opacity .12s;}
+  .link-group:hover .link-label{fill:var(--text); opacity:1;}
+  .link-group:hover .link-label-bg{opacity:0.85;}
+
+  /* TOOLTIP */
+  #tooltip{
+    position:fixed; max-width:280px; background:var(--panel-2); color:var(--text);
+    padding:14px 16px; border-radius:8px; font-size:12.5px; line-height:1.55;
+    box-shadow:0 16px 40px rgba(0,0,0,0.55); z-index:200; display:none;
+    border:1px solid var(--border);
+  }
+  #tooltip .tt-name{font-size:14px; font-weight:700; margin-bottom:4px;}
+  #tooltip .tt-party{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 8px;
+    border-radius:10px; margin-bottom:9px; font-weight:600;
+  }
+  #tooltip .tt-desc{color:var(--text); opacity:0.92;}
+  #tooltip .tt-hint{margin-top:10px; padding-top:8px; border-top:1px solid var(--border); font-size:10.5px; color:var(--muted-2); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.5px;}
+
+  /* DETAIL PANEL */
+  .detail-panel{
+    position:fixed; top:0; right:-400px; width:min(380px, 92vw); height:100vh;
+    background:var(--panel); border-left:1px solid var(--border); z-index:150;
+    transition:right .25s ease; overflow-y:auto; padding:22px 20px 40px;
+  }
+  .detail-panel.show{right:0; box-shadow:-20px 0 40px rgba(0,0,0,0.4);}
+  .detail-panel .panel-close{
+    position:absolute; top:16px; right:16px; cursor:pointer; font-size:20px;
+    color:var(--muted); background:none; border:none;
+  }
+  .detail-panel .panel-close:hover{color:var(--text);}
+  .panel-header{display:flex; gap:12px; align-items:center; margin:6px 0 16px; padding-right:24px;}
+  .panel-avatar{
+    width:48px; height:48px; border-radius:50%; flex:none; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; background:#1c2129;
+    font-family:'JetBrains Mono',monospace; font-weight:600; font-size:15px; color:var(--text);
+    border:2px solid var(--border);
+  }
+  .panel-avatar img{width:100%; height:100%; object-fit:cover;}
+  .panel-name{font-size:16px; font-weight:700; line-height:1.25;}
+  .panel-party{
+    display:inline-block; margin-top:4px; font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    padding:2px 8px; border-radius:10px; font-weight:600;
+  }
+  .panel-desc{font-size:13px; line-height:1.6; color:var(--text); opacity:0.92; margin-bottom:22px;}
+  .rel-heading{font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin:0 0 10px; font-weight:600;}
+  .rel-empty{color:var(--muted-2); font-size:12px;}
+  details.rel-details{margin-bottom:4px; border-left:2px solid var(--border); padding-left:10px;}
+  details.rel-details[open]{border-left-color:var(--accent);}
+  details.rel-details summary{
+    cursor:pointer; padding:6px 4px; list-style:none; font-size:12.5px; line-height:1.4;
+    border-radius:4px;
+  }
+  details.rel-details summary:hover{background:var(--panel-2);}
+  details.rel-details summary::-webkit-details-marker{display:none;}
+  details.rel-details summary::before{
+    content:'▸'; margin-right:6px; color:var(--accent); display:inline-block;
+    transition:transform .15s; font-size:10px;
+  }
+  details.rel-details[open] > summary::before{transform:rotate(90deg);}
+  .rel-label{color:var(--muted-2); font-size:11px;}
+  .rel-body{padding:2px 0 4px 14px;}
+  .rel-desc{color:var(--muted); font-size:11.5px; line-height:1.5; margin:2px 0 6px;}
+  .rel-leaf{padding:5px 4px 5px 14px; color:var(--muted-2); font-size:12px;}
+  .rel-cycle{font-size:10.5px; opacity:0.7;}
+
+  /* MODAL */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(4,5,7,0.72); z-index:300;
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:24px;
+    width:100%; max-width:420px; max-height:88vh; overflow-y:auto; position:relative;
+    box-shadow:0 24px 60px rgba(0,0,0,0.6);
+  }
+  .modal h2{font-size:16px; font-weight:700; margin:0 0 4px;}
+  .modal .modal-sub{font-size:12px; color:var(--muted); margin-bottom:18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11px; font-weight:600; margin-bottom:5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;}
+  .field input, .field select, .field textarea{
+    width:100%; padding:9px 11px; border-radius:6px; border:1px solid var(--border);
+    background:var(--panel-2); font-family:'Inter',sans-serif; font-size:13.5px; color:var(--text);
+    outline:none;
+  }
+  .field textarea{resize:vertical; min-height:64px;}
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent);}
+  .field-hint{font-size:11px; color:var(--muted-2); margin-top:4px;}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:18px;}
+  .modal-close{position:absolute; top:16px; right:18px; cursor:pointer; font-size:18px; color:var(--muted); background:none; border:none;}
+  .modal-close:hover{color:var(--text);}
+
+  .toast{
+    position:fixed; bottom:20px; left:20px; background:var(--panel-2); color:var(--text);
+    padding:10px 16px; border:1px solid var(--border); border-radius:6px; font-size:12.5px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5); z-index:400; opacity:0; transform:translateY(10px);
+    transition:all .25s; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+
+  @media (max-width:760px){
+    .sidebar{position:absolute; z-index:60; height:calc(100vh - 57px); box-shadow:20px 0 30px rgba(0,0,0,0.4);}
+    .search-wrap{width:170px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>Políticos Escandalosos</h1>
+      <div class="sub">ESCÂNDALOS, ENVOLVIDOS E APOIADORES</div>
+    </div>
+    <div class="search-wrap">
+      <input id="searchInput" type="text" placeholder="Buscar pessoa..." autocomplete="off">
+      <div class="search-result" id="searchResult"></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="btnAddPerson">+ Pessoa</button>
+      <button class="btn ghost" id="btnAddConn">+ Relação</button>
+      <button class="btn ghost" id="btnExport">Exportar</button>
+      <button class="btn ghost" id="btnImport">Importar</button>
+      <button class="btn ghost" id="btnReset" title="Apaga os dados salvos neste navegador e recarrega os dados originais do arquivo">Resetar dados</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="panel-block about-block">
+        <h2>Sobre este mapa</h2>
+        <p class="about-text">
+          Este mapa reúne políticos e outras figuras públicas que estiveram envolvidos em atos repugnáveis — corrupção, fraude, abuso de poder, entre outros — e as pessoas que os apoiam ou apoiaram.
+        </p>
+        <p class="about-text">
+          Estar no mesmo partido <b>não</b> significa, necessariamente, ter uma ligação direta. Cada pessoa mapeada aqui tem um motivo específico para estar no grafo — passe o mouse ou clique em qualquer nó para ver qual é.
+        </p>
+      </div>
+
+      <div class="panel-block">
+        <h2>Total mapeado</h2>
+        <div class="stat-total" id="statTotal">0</div>
+        <div class="stat-label" id="statLabel">pessoas · 0 relações</div>
+      </div>
+
+      <div class="panel-block">
+        <h2>Pessoas por partido <span class="n" id="partyCountN"></span></h2>
+        <div id="partyBreakdown"></div>
+      </div>
+
+      <div class="panel-block">
+        <h2>Como usar</h2>
+        <ul class="legend-list">
+          <li><span class="legend-arrow"></span>seta = relação (veja o rótulo)</li>
+          <li>Tamanho do nó = nº de relações</li>
+          <li>Clique num partido para filtrar</li>
+          <li>Passe o mouse num nó para ver a descrição</li>
+          <li>Clique num nó para ver a árvore de relações</li>
+          <li>Duplo clique num nó para editar</li>
+          <li>Arraste os nós para reorganizar</li>
+          <li>Clique numa aresta para removê-la</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="graph-area">
+      <svg id="graph"></svg>
+      <div class="empty-state" id="emptyState">
+        <div class="big">Rede vazia</div>
+        Use "+ Pessoa" para começar a mapear.
+      </div>
+      <div class="graph-controls">
+        <button id="zoomIn" title="Aumentar">+</button>
+        <button id="zoomReset" title="Centralizar">⤾</button>
+        <button id="zoomOut" title="Diminuir">−</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<div class="detail-panel" id="detailPanel">
+  <button class="panel-close" id="panelClose">×</button>
+  <div id="panelContent"></div>
+</div>
+
+
+<input type="file" id="importFile" accept=".json" style="display:none;">
+
+<!-- MODAL: pessoa -->
+<div class="modal-overlay" id="modalPerson">
+  <div class="modal">
+    <button class="modal-close" data-close="modalPerson">×</button>
+    <h2 id="personModalTitle">Adicionar pessoa</h2>
+    <div class="modal-sub">A cor do nó é definida automaticamente pelo partido.</div>
+    <input type="hidden" id="personId">
+    <div class="field">
+      <label>Nome *</label>
+      <input type="text" id="personName" placeholder="Ex: Daniel Vorcaro">
+    </div>
+    <div class="field">
+      <label>Partido</label>
+      <input type="text" id="personParty" placeholder="Ex: PL, MDB, Sem partido...">
+    </div>
+    <div class="field">
+      <label>Envolvimento (aparece ao passar o mouse)</label>
+      <textarea id="personDesc" placeholder="Ex: É o dono do Banco Master, investigado por fraude financeira."></textarea>
+    </div>
+    <div class="field">
+      <label>URL da foto (opcional)</label>
+      <input type="text" id="personPhoto" placeholder="https://...">
+      <div class="field-hint">Se vazio ou não carregar, mostramos as iniciais.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="modalPerson">Cancelar</button>
+      <button class="btn" id="savePerson">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: relação -->
+<div class="modal-overlay" id="modalConn">
+  <div class="modal">
+    <button class="modal-close" data-close="modalConn">×</button>
+    <h2>Adicionar relação</h2>
+    <div class="modal-sub">A seta vai da origem → para o destino. Descreva o tipo de relação no campo abaixo (apoio, doação, vínculo familiar, reunião, contato etc.) — nem toda relação é de apoio.</div>
+    <div class="field">
+      <label>Origem</label>
+      <select id="connFrom"></select>
+    </div>
+    <div class="field">
+      <label>Destino</label>
+      <select id="connTo"></select>
+    </div>
+    <div class="field">
+      <label>Tipo de relação</label>
+      <input type="text" id="connLabel" placeholder="Ex: apoio político, doação de campanha, vínculo familiar, reunião...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="modalConn">Cancelar</button>
+      <button class="btn" id="saveConn">Salvar relação</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- STATE ----------
+  let people = [];
+  let connections = [];
+  let offParties = new Set();
+  let simulation = null;
+  let svg, zoomLayer, linkG, nodeG, zoomBehavior;
+  let dragMoved = false;
+  let clickTimer = null;
+
+  const KNOWN_PARTY_COLORS = {
+    'PL':'#d9544f', 'MDB':'#4f8ff7', 'REPUBLICANOS':'#e8a33d', 'PT':'#c0392b',
+    'PSDB':'#2f6fb7', 'PSD':'#5aa36b', 'PP':'#8b7cf6', 'UNIÃO BRASIL':'#2fb6c4',
+    'UNIAO BRASIL':'#2fb6c4', 'UNIÃO':'#2fb6c4', 'PSOL':'#d6417a', 'NOVO':'#f26b3a',
+    'PDT':'#e0574f', 'PODEMOS':'#4aa3df', 'PSB':'#f0716b', 'CIDADANIA':'#f2c14e',
+    'SEM PARTIDO':'#8a93a3'
+  };
+  const FALLBACK_PALETTE = ['#38b2ac','#8b7cf6','#e8a33d','#4f8ff7','#5aa36b','#d9544f','#2fb6c4','#d6417a'];
+
+  function colorForParty(name){
+    const key = (name||'Sem partido').trim();
+    const up = key.toUpperCase();
+    if(KNOWN_PARTY_COLORS[up]) return KNOWN_PARTY_COLORS[up];
+    let h=0; for(let i=0;i<key.length;i++){ h = key.charCodeAt(i) + ((h<<5)-h); }
+    return FALLBACK_PALETTE[Math.abs(h)%FALLBACK_PALETTE.length];
+  }
+  function partyName(p){ return (p.party||'Sem partido').trim() || 'Sem partido'; }
+
+  // ---------- STORAGE (localStorage — works standalone on any hosting) ----------
+  const STORAGE_KEY = 'politicos-escandalosos-data-v1';
+  const VERSION_KEY = 'politicos-escandalosos-seed-version';
+  const CURRENT_SEED_VERSION = 3; // bump this whenever canonicalSeed() below gets new people/connections, or when removeDeprecated() changes
+
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        people = parsed.people || [];
+        connections = parsed.connections || [];
+      } else {
+        const seed = canonicalSeed();
+        people = seed.people;
+        connections = seed.connections;
+      }
+    }catch(e){
+      const seed = canonicalSeed();
+      people = seed.people;
+      connections = seed.connections;
+    }
+    mergeNewSeedEntries();
+    initGraph();
+    render();
+  }
+
+  // Adds any people/connections from the canonical seed that aren't present yet
+  // (matched by name), without touching anything the visitor already has or edited.
+  function mergeNewSeedEntries(){
+    let storedVersion = 0;
+    try{ storedVersion = parseInt(localStorage.getItem(VERSION_KEY) || '0', 10); }catch(e){}
+    if(storedVersion >= CURRENT_SEED_VERSION) return;
+
+    const seed = canonicalSeed();
+    const existingNames = new Set(people.map(p=>p.name.toLowerCase()));
+    let added = false;
+
+    seed.people.forEach(p=>{
+      if(!existingNames.has(p.name.toLowerCase())){
+        people.push(p);
+        existingNames.add(p.name.toLowerCase());
+        added = true;
+      }
+    });
+
+    const findByName = n => people.find(p=>p.name.toLowerCase()===n.toLowerCase());
+    const canonicalNameById = new Map(seed.people.map(p=>[p.id, p.name]));
+    seed.connections.forEach(c=>{
+      const fromName = canonicalNameById.get(c.from);
+      const toName = canonicalNameById.get(c.to);
+      if(!fromName || !toName) return;
+      const from = findByName(fromName), to = findByName(toName);
+      if(from && to){
+        const exists = connections.some(x=>x.from===from.id && x.to===to.id);
+        if(!exists){
+          connections.push({ id: uid('c'), from: from.id, to: to.id, label: c.label });
+          added = true;
+        }
+      }
+    });
+
+    if(storedVersion < 3){
+      // Removed: this meeting was never a support/endorsement relationship, and its
+      // wording was being misread as one in the relations panel. Drop the edge and
+      // the corresponding sentence from Lula's description if the visitor still has it.
+      const vorcaro = people.find(p=>p.name.toLowerCase()==='daniel vorcaro');
+      const lula = people.find(p=>p.name.toLowerCase()==='luiz inácio lula da silva');
+      if(vorcaro && lula){
+        const before = connections.length;
+        connections = connections.filter(c=>!(c.from===vorcaro.id && c.to===lula.id));
+        if(connections.length !== before) added = true;
+      }
+      if(lula && /reunião fora da agenda/i.test(lula.desc||'')){
+        lula.desc = 'Presidente da República (PT), candidato à reeleição em 2026. É pai de Fábio Luís Lula da Silva (Lulinha).';
+        added = true;
+      }
+    }
+
+    try{ localStorage.setItem(VERSION_KEY, String(CURRENT_SEED_VERSION)); }catch(e){}
+    if(added) saveData();
+  }
+
+  let saveTimer = null;
+  function saveData(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      try{
+        const slim = people.map(p=>({id:p.id,name:p.name,party:p.party,desc:p.desc,photo:p.photo,x:p.x,y:p.y,fx:p.fx,fy:p.fy}));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({people:slim, connections}));
+      }catch(e){ console.error('Falha ao salvar', e); }
+    }, 350);
+  }
+
+  // Canonical dataset. Connections reference people by their canonical id (p1..p17);
+  // mergeNewSeedEntries() resolves those ids to names to match against whatever
+  // ids the visitor's stored data already has.
+  function canonicalSeed(){
+    const people = [
+      { id:'p1', name:'Daniel Vorcaro', party:'Sem partido',
+        desc:'Empresário, dono do Banco Master. Investigado pela Polícia Federal (Operação Compliance Zero) por suspeita de fraude financeira envolvendo bilhões de reais. Firmou termo de confidencialidade visando delação premiada.',
+        photo:'' },
+      { id:'p2', name:'Ibaneis Rocha', party:'MDB',
+        desc:'Ex-governador do Distrito Federal (MDB), bolsonarista apesar da legenda. Foi afastado do cargo por 90 dias pelo STF (ministro Alexandre de Moraes) em janeiro de 2023, sob suspeita de omissão na contenção dos atos golpistas de 8 de janeiro em Brasília; o inquérito foi arquivado em março de 2025 por falta de provas. Também é um dos principais aliados de Daniel Vorcaro em Brasília: por meses, o BRB (banco estatal do DF) comprou lotes de créditos consignados — descontados diretamente na folha de pagamento do tomador — do Banco Master, ajudando a sustentar a instituição de Vorcaro. Desistiu da candidatura ao Senado em 2026 após os desdobramentos do escândalo do Master.',
+        photo:'' },
+      { id:'p3', name:'Fabiano Zettel', party:'Sem partido',
+        desc:'Gestor de fundos e grande financiador de campanhas. Cunhado de Daniel Vorcaro (casado com a irmã dele). Foi pastor da Igreja Batista da Lagoinha até o mês passado. Em 2022, doou R$ 3 milhões para Jair Bolsonaro e R$ 2 milhões para Tarcísio de Freitas.',
+        photo:'' },
+      { id:'p4', name:'Jair Bolsonaro', party:'PL',
+        desc:'Ex-presidente do Brasil (PL). Preso desde novembro de 2025, cumprindo pena de 27 anos e 3 meses por tentativa de golpe de Estado, e inelegível até 2030. Indicou o filho, o senador Flávio Bolsonaro (PL), como candidato à Presidência em 2026.',
+        photo:'' },
+      { id:'p5', name:'Eduardo Bolsonaro', party:'PL',
+        desc:'Ex-deputado federal (PL-SP), filho de Jair Bolsonaro. Está nos Estados Unidos desde 2025. Perdeu o mandato por excesso de faltas em dezembro de 2025 e, em julho de 2026, anunciou que não vai disputar as eleições de 2026. É réu no STF.',
+        photo:'' },
+      { id:'p6', name:'Tarcísio de Freitas', party:'Republicanos',
+        desc:'Governador de São Paulo (Republicanos), disputa a reeleição em 2026. Era visto como o nome preferido do Centrão e do mercado financeiro para a Presidência, mas confirmou apoio irrestrito à candidatura de Flávio Bolsonaro (PL).',
+        photo:'' },
+      { id:'p7', name:'Flávio Bolsonaro', party:'PL',
+        desc:'Senador pelo Rio de Janeiro (PL), filho mais velho de Jair Bolsonaro. Escolhido pelo pai como candidato do PL à Presidência em 2026. Alvo de escândalo após vazamento de áudio pedindo dinheiro a Daniel Vorcaro para financiar o filme "Dark Horse". Também é réu histórico no caso "rachadinha": acusado de desviar salários de assessores fantasmas na Assembleia Legislativa do Rio (2007–2018), com o ex-motorista Fabrício Queiroz apontado como operador do esquema, incluindo suposta lavagem de dinheiro via uma loja de chocolates.',
+        photo:'' },
+      { id:'p8', name:'Ana Paula Marra', party:'Podemos',
+        desc:'Advogada, ex-secretária de Desenvolvimento Social do DF (Sedes) por seis anos, responsável pela criação do Prato Cheio e do Cartão Gás. Filiou-se ao Podemos em 2026 para disputar deputada distrital, com apoio declarado de Ibaneis Rocha e proximidade com Mayara Noronha.',
+        photo:'' },
+      { id:'p9', name:'Mayara Noronha', party:'Podemos',
+        desc:'Advogada, ex-primeira-dama do Distrito Federal e esposa de Ibaneis Rocha (MDB). Foi secretária de Desenvolvimento Social do DF. Filiou-se ao Podemos em 2026 e registrou candidatura a deputada federal, usando o sobrenome de solteira nas urnas.',
+        photo:'' },
+      { id:'p10', name:'Cláudio Ferreira Domingues', party:'Democrata',
+        desc:'Ex-administrador regional no governo Ibaneis Rocha (indicado ao Sol Nascente em 2020). Candidato a deputado distrital pelo Democrata em 2026 (número 35456). Acionou o TRE-DF pedindo o indeferimento da candidatura de José Roberto Arruda (PSD) ao governo do DF, alegando inelegibilidade por condenações anteriores.',
+        photo:'' },
+      { id:'p11', name:'Fábio Luís Lula da Silva (Lulinha)', party:'Sem partido',
+        desc:'Empresário, filho do presidente Luiz Inácio Lula da Silva (PT). Teve contatos com Daniel Vorcaro: foi assessor da Fictor, fundo que tentou comprar o Banco Master às vésperas da prisão do banqueiro, e seu nome apareceu nas investigações da Operação Compliance Zero. Também é investigado por supostas fraudes no INSS.',
+        photo:'' },
+      { id:'p12', name:'Luiz Inácio Lula da Silva', party:'PT',
+        desc:'Presidente da República (PT), candidato à reeleição em 2026. É pai de Fábio Luís Lula da Silva (Lulinha).',
+        photo:'' },
+      { id:'p13', name:'Taka Yamauchi', party:'MDB',
+        desc:'Prefeito de Diadema (SP) desde 2025 (MDB). Apoiador declarado do governador Tarcísio de Freitas (Republicanos), recebeu apoio dele na eleição de 2024 e confirmou que fará campanha pela reeleição de Tarcísio em 2026.',
+        photo:'' },
+      { id:'p14', name:'Nikolas Ferreira', party:'PL',
+        desc:'Deputado federal por Minas Gerais (PL), uma das principais lideranças jovens do bolsonarismo nas redes sociais. Após semanas de omissão durante a crise entre Flávio e Michelle Bolsonaro, declarou apoio explícito à pré-candidatura de Flávio à Presidência em julho de 2026 e passou a integrar a campanha dele, com papel central em Minas Gerais.',
+        photo:'' },
+      { id:'p15', name:'Aécio Neves', party:'PSDB',
+        desc:'Deputado federal por Minas Gerais e presidente nacional do PSDB desde novembro de 2025. Alvo, desde 2006, de acusações recorrentes de uso de cocaína — nunca comprovadas e sempre negadas por ele publicamente. Também protagonizou um escândalo documentado: em 2017, foi flagrado em gravação entregue à Justiça pedindo R$ 2 milhões ao empresário Joesley Batista (JBS), o que levou ao seu afastamento do mandato de senador pelo STF. Anunciou em agosto de 2026 que não disputará nenhum cargo nas eleições, focando em reconstruir o PSDB.',
+        photo:'' },
+      { id:'p16', name:'Michelle Bolsonaro', party:'PL',
+        desc:'Ex-primeira-dama do Brasil e esposa de Jair Bolsonaro (PL). Candidata a senadora pelo Distrito Federal em 2026. Está no centro do "caso das joias sauditas": recebeu um kit avaliado pela PF em R$ 5,1 milhões do governo da Arábia Saudita, que a família tentou vender ilegalmente nos EUA. Também é investigada por suposto desvio de recursos públicos usados para pagamentos a ela e a familiares, feitos em dinheiro vivo — segundo apurações recentes da PF, dificilmente escapará de indiciamento.',
+        photo:'' },
+      { id:'p17', name:'Renan Bolsonaro', party:'PL',
+        desc:'Nome de urna de Jair Renan Bolsonaro, filho mais novo de Jair Bolsonaro ("filho 04"). Vereador mais votado de Balneário Camboriú (SC) em 2024. Candidato a deputado federal por Santa Catarina em 2026, usando "Jair Bolsonaro" como nome de urna — mesma estratégia adotada em 2024. Declarou patrimônio quatro vezes maior que o de dois anos antes.',
+        photo:'' }
+    ];
+    const connections = [
+      { id:'c1', from:'p2', to:'p1', label:'apoio político / articulação em Brasília' },
+      { id:'c2', from:'p2', to:'p4', label:'apoio político' },
+      { id:'c3', from:'p3', to:'p4', label:'doação de campanha (R$3 mi, 2022)' },
+      { id:'c4', from:'p3', to:'p6', label:'doação de campanha (R$2 mi, 2022)' },
+      { id:'c5', from:'p3', to:'p1', label:'vínculo familiar (cunhado)' },
+      { id:'c6', from:'p4', to:'p7', label:'indicação como candidato (PL)' },
+      { id:'c7', from:'p6', to:'p7', label:'apoio à candidatura presidencial' },
+      { id:'c8', from:'p1', to:'p7', label:'pedido de financiamento "Dark Horse" (R$23 mi)' },
+      { id:'c9', from:'p8', to:'p2', label:'apoio político' },
+      { id:'c10', from:'p9', to:'p8', label:'amizade / apoio político (Podemos)' },
+      { id:'c11', from:'p2', to:'p9', label:'vínculo familiar (cônjuge)' },
+      { id:'c12', from:'p9', to:'p2', label:'apoio político' },
+      { id:'c13', from:'p10', to:'p2', label:'apoio político' },
+      { id:'c14', from:'p1', to:'p11', label:'contato / rede de negócios (Fictor Invest)' },
+      { id:'c15', from:'p12', to:'p11', label:'vínculo familiar (pai e filho)' },
+      { id:'c17', from:'p13', to:'p6', label:'apoio político' },
+      { id:'c18', from:'p1', to:'p5', label:'operação financeira "Dark Horse" (fundo Havengate)' },
+      { id:'c19', from:'p4', to:'p5', label:'vínculo familiar (pai e filho)' },
+      { id:'c20', from:'p7', to:'p5', label:'vínculo familiar (irmãos)' },
+      { id:'c21', from:'p4', to:'p6', label:'nomeação como ministro da Infraestrutura (2019–2022)' },
+      { id:'c22', from:'p3', to:'p7', label:'operação financeira "Dark Horse" (operador dos pagamentos)' },
+      { id:'c23', from:'p14', to:'p7', label:'apoio político / integra a campanha' },
+      { id:'c24', from:'p4', to:'p16', label:'vínculo familiar (cônjuge)' },
+      { id:'c25', from:'p16', to:'p7', label:'apoio à candidatura presidencial (família)' },
+      { id:'c26', from:'p4', to:'p17', label:'vínculo familiar (pai e filho)' },
+      { id:'c27', from:'p7', to:'p17', label:'vínculo familiar (irmãos)' }
+    ];
+    return { people, connections };
+  }
+
+  // ---------- HELPERS ----------
+  function initials(name){ return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+  function byId(id){ return people.find(p=>p.id===id); }
+  function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+  function degreeOf(id){ return connections.filter(c=>c.from===id || c.to===id).length; }
+  function nodeRadius(p){
+    const d = degreeOf(p.id);
+    return 18 + Math.sqrt(d) * 11;
+  }
+  function isVisible(p){ return !offParties.has(partyName(p)); }
+
+  // ---------- INIT GRAPH ----------
+  function initGraph(){
+    svg = d3.select('#graph');
+    svg.selectAll('*').remove();
+    const defs = svg.append('defs');
+    defs.append('marker')
+      .attr('id','arrow').attr('viewBox','0 -5 10 10').attr('refX',9).attr('refY',0)
+      .attr('markerWidth',7).attr('markerHeight',7).attr('orient','auto')
+      .append('path').attr('d','M0,-5L10,0L0,5').attr('fill','var(--link-color)');
+
+    zoomLayer = svg.append('g').attr('class','zoom-layer');
+    linkG = zoomLayer.append('g').attr('class','links');
+    nodeG = zoomLayer.append('g').attr('class','nodes');
+
+    zoomBehavior = d3.zoom().scaleExtent([0.25, 2.5]).on('zoom', (event)=>{
+      zoomLayer.attr('transform', event.transform);
+    });
+    svg.call(zoomBehavior);
+    svg.on('click', (event)=>{
+      if(event.target === svg.node()) closeDetailPanel();
+    });
+
+    document.getElementById('zoomIn').onclick = ()=> svg.transition().duration(200).call(zoomBehavior.scaleBy, 1.25);
+    document.getElementById('zoomOut').onclick = ()=> svg.transition().duration(200).call(zoomBehavior.scaleBy, 0.8);
+    document.getElementById('zoomReset').onclick = ()=> svg.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity);
+
+    const rect = svg.node().getBoundingClientRect();
+    simulation = d3.forceSimulation()
+      .force('link', d3.forceLink().id(d=>d.id).distance(260).strength(0.35))
+      .force('charge', d3.forceManyBody().strength(-900))
+      .force('center', d3.forceCenter(rect.width/2, rect.height/2))
+      .force('collision', d3.forceCollide().radius(d=>nodeRadius(d)+72).strength(1))
+      .force('x', d3.forceX(rect.width/2).strength(0.03))
+      .force('y', d3.forceY(rect.height/2).strength(0.03))
+      .on('tick', ticked);
+
+    window.addEventListener('resize', ()=>{
+      const r = svg.node().getBoundingClientRect();
+      simulation.force('center', d3.forceCenter(r.width/2, r.height/2));
+      simulation.force('x', d3.forceX(r.width/2).strength(0.03));
+      simulation.force('y', d3.forceY(r.height/2).strength(0.03));
+      simulation.alpha(0.3).restart();
+    });
+  }
+
+  function ticked(){
+    linkG.selectAll('path.link').attr('d', linkPath);
+    linkG.selectAll('rect.link-label-bg').attr('x', d=> (d.source.x+d.target.x)/2 - 110).attr('y', d=> (d.source.y+d.target.y)/2 - 9);
+    linkG.selectAll('text.link-label').attr('x', d=> (d.source.x+d.target.x)/2).attr('y', d=> (d.source.y+d.target.y)/2 + 3.5);
+    nodeG.selectAll('g.node').attr('transform', d=> `translate(${d.x},${d.y})`);
+  }
+
+  function linkPath(d){
+    const sr = nodeRadius(d.source), tr = nodeRadius(d.target);
+    const dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
+    const dist = Math.hypot(dx,dy) || 1;
+    const x1 = d.source.x + dx/dist*sr, y1 = d.source.y + dy/dist*sr;
+    const x2 = d.target.x - dx/dist*(tr+8), y2 = d.target.y - dy/dist*(tr+8);
+    return `M${x1},${y1}L${x2},${y2}`;
+  }
+
+  // ---------- RENDER ----------
+  function render(){
+    renderStats();
+    renderPartyBreakdown();
+    renderGraph();
+  }
+
+  function renderStats(){
+    document.getElementById('statTotal').textContent = people.length;
+    document.getElementById('statLabel').textContent = `pessoa${people.length===1?'':'s'} · ${connections.length} relaç${connections.length===1?'ão':'ões'}`;
+  }
+
+  function renderPartyBreakdown(){
+    const counts = new Map();
+    people.forEach(p=>{
+      const key = partyName(p);
+      counts.set(key, (counts.get(key)||0) + 1);
+    });
+    const rows = Array.from(counts.entries()).sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+    const max = rows.length ? rows[0][1] : 1;
+    document.getElementById('partyCountN').textContent = rows.length ? `(${rows.length})` : '';
+
+    const container = document.getElementById('partyBreakdown');
+    container.innerHTML = '';
+    rows.forEach(([name, count])=>{
+      const color = colorForParty(name);
+      const off = offParties.has(name);
+      const row = document.createElement('div');
+      row.innerHTML = `
+        <div class="party-row ${off?'off':''}">
+          <span class="dot" style="background:${color}"></span>
+          <span class="name">${escapeHtml(name)}</span>
+          <span class="count mono">${count}</span>
+        </div>
+        <div class="party-bar-track"><div class="party-bar-fill" style="width:${(count/max*100).toFixed(0)}%; background:${color}"></div></div>
+      `;
+      row.querySelector('.party-row').addEventListener('click', ()=>{
+        if(offParties.has(name)) offParties.delete(name); else offParties.add(name);
+        render();
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function renderGraph(){
+    document.getElementById('emptyState').style.display = people.length ? 'none' : 'block';
+    renderSelects();
+
+    const visiblePeople = people.filter(isVisible);
+    const visibleIds = new Set(visiblePeople.map(p=>p.id));
+    const visibleLinks = connections
+      .filter(c => visibleIds.has(c.from) && visibleIds.has(c.to))
+      .map(c => ({ ...c, source: c.from, target: c.to }));
+
+    // ---- LINKS ----
+    const linkSel = linkG.selectAll('g.link-group').data(visibleLinks, d=>d.id);
+    linkSel.exit().remove();
+    const linkEnter = linkSel.enter().append('g').attr('class','link-group');
+    linkEnter.append('path').attr('class','link').attr('marker-end','url(#arrow)');
+    linkEnter.append('path').attr('class','link-hit');
+    linkEnter.append('rect').attr('class','link-label-bg').attr('width',220).attr('height',16).attr('fill','var(--bg)').attr('stroke','var(--border)').attr('stroke-width',1).attr('rx',3);
+    linkEnter.append('text').attr('class','link-label').attr('text-anchor','middle');
+
+    const linkMerged = linkEnter.merge(linkSel);
+    linkMerged.select('text.link-label').text(d=> d.label ? (d.label.length>34? d.label.slice(0,34)+'…' : d.label) : '');
+    linkMerged.select('rect.link-label-bg').style('display', d=> d.label ? null : 'none');
+    linkMerged.on('click', (event,d)=>{
+      event.stopPropagation();
+      const from = byId(d.from), to = byId(d.to);
+      if(confirm(`Remover relação: ${from?from.name:'?'} → ${to?to.name:'?'}?`)){
+        connections = connections.filter(x=>x.id!==d.id);
+        saveData(); render();
+      }
+    });
+    linkMerged.on('mouseenter', function(){ d3.select(this).select('path.link').classed('hovered', true); });
+
+    // ---- NODES ----
+    const nodeSel = nodeG.selectAll('g.node').data(visiblePeople, d=>d.id);
+    nodeSel.exit().remove();
+
+    const nodeEnter = nodeSel.enter().append('g').attr('class','node');
+
+    nodeEnter.append('circle').attr('class','avatar-ring');
+    nodeEnter.append('foreignObject').attr('class','avatar-fo');
+    nodeEnter.append('g').attr('class','remove-btn')
+      .call(g=>{ g.append('circle').attr('r',8); g.append('text').text('×'); });
+    nodeEnter.append('text').attr('class','node-name').attr('text-anchor','middle');
+    nodeEnter.append('text').attr('class','node-party').attr('text-anchor','middle');
+
+    const nodeMerged = nodeEnter.merge(nodeSel);
+
+    nodeMerged.each(function(p){
+      const r = nodeRadius(p);
+      const g = d3.select(this);
+      const color = colorForParty(p.party);
+
+      g.select('circle.avatar-ring').attr('r', r).attr('stroke', color).style('color', color);
+
+      const fo = g.select('foreignObject.avatar-fo')
+        .attr('x', -r+4).attr('y', -r+4).attr('width',(r-4)*2).attr('height',(r-4)*2);
+      const photoHtml = p.photo
+        ? `<img src="${escapeHtml(p.photo)}" onerror="this.parentElement.textContent='${initials(p.name)}'">`
+        : initials(p.name);
+      fo.html(`<div class="avatar-box" style="font-size:${Math.max(10, r*0.4)}px">${photoHtml}</div>`);
+
+      g.select('.remove-btn').attr('transform', `translate(${r-3},${-r+3})`);
+      g.select('text.node-name').attr('y', r + 16).text(p.name);
+      g.select('text.node-party').attr('y', r + 29).text(partyName(p)).style('fill', color);
+    });
+
+    nodeMerged.select('.remove-btn').on('click', (event,p)=>{
+      event.stopPropagation();
+      if(confirm(`Remover "${p.name}" e todas as relações ligadas a essa pessoa?`)){
+        people = people.filter(x=>x.id!==p.id);
+        connections = connections.filter(c=>c.from!==p.id && c.to!==p.id);
+        saveData(); render();
+      }
+    });
+
+    nodeMerged
+      .on('mouseenter', function(event,p){ showTooltip(p,event); d3.select(this).classed('highlighted', true); })
+      .on('mousemove', positionTooltip)
+      .on('mouseleave', function(){ hideTooltip(); d3.select(this).classed('highlighted', false); })
+      .on('click', (event,p)=>{
+        event.stopPropagation();
+        if(dragMoved) return;
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(()=> openDetailPanel(p), 200);
+      })
+      .on('dblclick', (event,p)=>{
+        event.stopPropagation();
+        clearTimeout(clickTimer);
+        openEditPerson(p);
+      })
+      .call(d3.drag()
+        .on('start', (event,d)=>{
+          dragMoved = false;
+          if(!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x; d.fy = d.y;
+          d3.select(event.sourceEvent.target.closest('.node')).classed('dragging', true);
+        })
+        .on('drag', (event,d)=>{
+          dragMoved = true;
+          d.fx = event.x; d.fy = event.y;
+        })
+        .on('end', (event,d)=>{
+          if(!event.active) simulation.alphaTarget(0);
+          d3.select(event.sourceEvent.target.closest('.node')).classed('dragging', false);
+          saveData();
+        })
+      );
+
+    simulation.nodes(visiblePeople);
+    simulation.force('link').links(visibleLinks);
+    simulation.alpha(0.7).restart();
+  }
+
+  // ---------- TOOLTIP (hover: only description) ----------
+  function showTooltip(p, event){
+    const tooltip = document.getElementById('tooltip');
+    const color = colorForParty(p.party);
+    tooltip.innerHTML = `
+      <div class="tt-name">${escapeHtml(p.name)}</div>
+      <div class="tt-party" style="background:${color}22; color:${color}">${escapeHtml(partyName(p))}</div>
+      <div class="tt-desc">${escapeHtml(p.desc||'Sem descrição cadastrada ainda.')}</div>
+      <div class="tt-hint">Clique para ver relações</div>
+    `;
+    tooltip.style.display = 'block';
+    positionTooltip(event);
+  }
+  function positionTooltip(event){
+    const tooltip = document.getElementById('tooltip');
+    const pad = 16;
+    const tw = tooltip.offsetWidth || 280;
+    const th = tooltip.offsetHeight || 120;
+    let x = event.clientX + pad, y = event.clientY + pad;
+    if(x + tw + pad > window.innerWidth) x = event.clientX - tw - pad;
+    if(y + th + pad > window.innerHeight) y = event.clientY - th - pad;
+    x = Math.max(8, Math.min(x, window.innerWidth - tw - 8));
+    y = Math.max(8, Math.min(y, window.innerHeight - th - 8));
+    tooltip.style.left = x + 'px'; tooltip.style.top = y + 'px';
+  }
+  function hideTooltip(){ document.getElementById('tooltip').style.display = 'none'; }
+
+  // ---------- DETAIL PANEL (click: nested relations chain) ----------
+  function buildRelationsTree(personId, visited){
+    const rels = [];
+    connections.forEach(c=>{
+      if(c.from===personId) rels.push({ dir:'out', otherId:c.to, label:c.label });
+      if(c.to===personId) rels.push({ dir:'in', otherId:c.from, label:c.label });
+    });
+    if(!rels.length) return '<div class="rel-empty">Nenhuma relação mapeada ainda.</div>';
+
+    return rels.map(r=>{
+      const other = byId(r.otherId);
+      if(!other) return '';
+      const arrowSymbol = r.dir==='out' ? '→' : '←';
+      const relText = r.label ? escapeHtml(r.label) : 'relação não especificada';
+      const line = `${arrowSymbol} <b>${escapeHtml(other.name)}</b> — ${relText}`;
+      if(visited.has(other.id)){
+        return `<div class="rel-leaf">${line} <span class="rel-cycle">(já listado acima)</span></div>`;
+      }
+      const nextVisited = new Set(visited);
+      nextVisited.add(other.id);
+      const nested = buildRelationsTree(other.id, nextVisited);
+      return `
+        <details class="rel-details">
+          <summary>${line}</summary>
+          <div class="rel-body">
+            <div class="rel-desc">${escapeHtml(other.desc||'Sem descrição cadastrada.')}</div>
+            ${nested}
+          </div>
+        </details>`;
+    }).join('');
+  }
+
+  function openDetailPanel(p){
+    hideTooltip();
+    const color = colorForParty(p.party);
+    const photoHtml = p.photo
+      ? `<img src="${escapeHtml(p.photo)}" onerror="this.parentElement.textContent='${initials(p.name)}'">`
+      : initials(p.name);
+    document.getElementById('panelContent').innerHTML = `
+      <div class="panel-header">
+        <div class="panel-avatar">${photoHtml}</div>
+        <div>
+          <div class="panel-name">${escapeHtml(p.name)}</div>
+          <div class="panel-party" style="background:${color}22; color:${color}">${escapeHtml(partyName(p))}</div>
+        </div>
+      </div>
+      <div class="panel-desc">${escapeHtml(p.desc||'Sem descrição cadastrada ainda.')}</div>
+      <div class="rel-heading">Relações</div>
+      <div class="rel-tree">${buildRelationsTree(p.id, new Set([p.id]))}</div>
+    `;
+    document.getElementById('detailPanel').classList.add('show');
+  }
+  function closeDetailPanel(){
+    document.getElementById('detailPanel').classList.remove('show');
+  }
+  document.getElementById('panelClose').addEventListener('click', closeDetailPanel);
+
+
+  const searchInput = document.getElementById('searchInput');
+  const searchResult = document.getElementById('searchResult');
+  searchInput.addEventListener('input', ()=>{
+    const q = searchInput.value.trim().toLowerCase();
+    nodeG.selectAll('g.node').classed('highlighted', false);
+    if(!q){ searchResult.classList.remove('show'); return; }
+    const matches = people.filter(p=>p.name.toLowerCase().includes(q));
+    if(matches.length){
+      searchResult.className = 'search-result show';
+      searchResult.innerHTML = `<div class="sr-title">Encontrado (${matches.length})</div>` +
+        matches.map(m=>`<div class="sr-item" data-id="${m.id}">${escapeHtml(m.name)} — ${escapeHtml(partyName(m))}</div>`).join('');
+      matches.forEach(m=>{
+        nodeG.selectAll('g.node').filter(d=>d.id===m.id).classed('highlighted', true);
+      });
+      searchResult.querySelectorAll('.sr-item').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          const p = byId(el.dataset.id);
+          if(p && offParties.has(partyName(p))){ offParties.delete(partyName(p)); render(); }
+          focusNode(p);
+        });
+      });
+      if(matches.length===1) focusNode(matches[0]);
+    } else {
+      searchResult.className = 'search-result show miss';
+      searchResult.innerHTML = `<div class="sr-title">Não encontrado</div>"${escapeHtml(searchInput.value)}" ainda não foi adicionado ao mapa.`;
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.search-wrap')) searchResult.classList.remove('show');
+  });
+  function focusNode(p){
+    if(!p) return;
+    const rect = svg.node().getBoundingClientRect();
+    const scale = 1.1;
+    const tx = rect.width/2 - p.x*scale, ty = rect.height/2 - p.y*scale;
+    svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx,ty).scale(scale));
+  }
+
+  // ---------- MODALS ----------
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+  document.querySelectorAll('[data-close]').forEach(el=> el.addEventListener('click', ()=> closeModal(el.dataset.close)));
+  document.querySelectorAll('.modal-overlay').forEach(ov=> ov.addEventListener('click', (e)=>{ if(e.target===ov) ov.classList.remove('show'); }));
+
+  document.getElementById('btnAddPerson').addEventListener('click', ()=>{
+    document.getElementById('personModalTitle').textContent = 'Adicionar pessoa';
+    document.getElementById('personId').value = '';
+    document.getElementById('personName').value = '';
+    document.getElementById('personParty').value = '';
+    document.getElementById('personDesc').value = '';
+    document.getElementById('personPhoto').value = '';
+    openModal('modalPerson');
+  });
+
+  function openEditPerson(p){
+    document.getElementById('personModalTitle').textContent = 'Editar pessoa';
+    document.getElementById('personId').value = p.id;
+    document.getElementById('personName').value = p.name;
+    document.getElementById('personParty').value = p.party;
+    document.getElementById('personDesc').value = p.desc;
+    document.getElementById('personPhoto').value = p.photo;
+    openModal('modalPerson');
+  }
+
+  document.getElementById('savePerson').addEventListener('click', ()=>{
+    const name = document.getElementById('personName').value.trim();
+    if(!name){ showToast('Digite um nome.'); return; }
+    const id = document.getElementById('personId').value || uid('p');
+    const existing = byId(id);
+    const data = {
+      id, name,
+      party: document.getElementById('personParty').value.trim() || 'Sem partido',
+      desc: document.getElementById('personDesc').value.trim(),
+      photo: document.getElementById('personPhoto').value.trim()
+    };
+    if(existing){ Object.assign(existing, data); }
+    else { people.push(data); }
+    saveData(); render();
+    closeModal('modalPerson');
+    showToast('Pessoa salva.');
+  });
+
+  document.getElementById('btnAddConn').addEventListener('click', ()=>{
+    if(people.length < 2){ showToast('Adicione pelo menos 2 pessoas primeiro.'); return; }
+    document.getElementById('connLabel').value = '';
+    renderSelects();
+    openModal('modalConn');
+  });
+
+  function renderSelects(){
+    const from = document.getElementById('connFrom');
+    const to = document.getElementById('connTo');
+    if(!from || !to) return;
+    const opts = people.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    from.innerHTML = opts; to.innerHTML = opts;
+  }
+
+  document.getElementById('saveConn').addEventListener('click', ()=>{
+    const from = document.getElementById('connFrom').value;
+    const to = document.getElementById('connTo').value;
+    if(from === to){ showToast('Escolha duas pessoas diferentes.'); return; }
+    if(connections.some(c=>c.from===from && c.to===to)){ showToast('Essa relação já existe.'); return; }
+    connections.push({ id: uid('c'), from, to, label: document.getElementById('connLabel').value.trim() });
+    saveData(); render();
+    closeModal('modalConn');
+    showToast('Relação adicionada.');
+  });
+
+  // ---------- EXPORT / IMPORT ----------
+  document.getElementById('btnExport').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify({people, connections}, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'politicos-escandalosos.json';
+    a.click();
+  });
+  document.getElementById('btnImport').addEventListener('click', ()=> document.getElementById('importFile').click());
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    if(!confirm('Isso apaga tudo que está salvo neste navegador (edições, posições, importações) e recarrega os dados originais do arquivo. Continuar?')) return;
+    try{
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(VERSION_KEY);
+    }catch(e){}
+    location.reload();
+  });
+  document.getElementById('importFile').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      try{
+        const parsed = JSON.parse(ev.target.result);
+        if(!confirm('Importar vai substituir todos os dados atuais. Continuar?')) return;
+        people = parsed.people || [];
+        connections = parsed.connections || [];
+        saveData(); render();
+        showToast('Dados importados.');
+      }catch(err){ showToast('Arquivo inválido.'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // ---------- INIT ----------
+  loadData();
+})();
+</script>
+</body>
+</html>
