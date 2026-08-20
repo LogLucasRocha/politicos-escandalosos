@@ -487,7 +487,7 @@
   // ---------- STORAGE (localStorage — works standalone on any hosting) ----------
   const STORAGE_KEY = 'politicos-escandalosos-data-v1';
   const VERSION_KEY = 'politicos-escandalosos-seed-version';
-  const CURRENT_SEED_VERSION = 4; // bump this whenever canonicalSeed() below gets new people/connections, or when removeDeprecated() changes
+  const CURRENT_SEED_VERSION = 5; // bump this whenever canonicalSeed() below gets new people/connections, or when removeDeprecated() changes
 
   function loadData(){
     try{
@@ -647,6 +647,9 @@
         photo:'' },
       { id:'p18', name:'Ricardo Nunes', party:'MDB',
         desc:'Prefeito de São Paulo (MDB), reeleito em 2024. Assumiu a prefeitura em 2021 após a morte de Bruno Covas, de quem era vice. Aliado de Tarcísio de Freitas (Republicanos), que o chamou de "maior prefeito da história" de SP. Sua gestão acumula controvérsias: em agosto de 2024, o Datafolha apontou apenas 26% de avaliação ótima/boa, com 66% dos paulistanos dizendo que ele fez menos pela cidade do que esperavam. A política de "dispersão" da Cracolândia foi acusada por ONGs e pela Defensoria Pública de truculência e de apenas espalhar o problema — o local chegou a ser cercado por gradis e comparado a um "curral humano". O programa de vigilância Smart Sampa, com até 20 mil câmeras de reconhecimento facial, recebeu recomendação do Ministério Público para ser suspenso por risco de erros e racismo. Falhas de zeladoria (poda de árvores e limpeza de bueiros) e apagões recorrentes deixaram a cidade "nas trevas" durante temporais. A revista Fórum chegou a listar "45 escândalos, investigações e crises" de sua gestão.',
+        photo:'' },
+      { id:'p19', name:'Ciro Nogueira', party:'PP',
+        desc:'Senador pelo Piauí e presidente nacional do PP (Progressistas), ex-ministro da Casa Civil no governo Bolsonaro. Apontado como um dos maiores aliados políticos de Daniel Vorcaro, tornou-se alvo da 5ª fase da Operação Compliance Zero (PF), em maio de 2026, no caso do Banco Master. Transita nas duas pontas do escândalo. Do lado do Master: segundo o STF (min. André Mendonça), reproduziu no Senado a chamada "emenda Master" — emenda à PEC 65/2023 que ampliava a cobertura do FGC (Fundo Garantidor de Créditos) de R$ 250 mil para R$ 1 milhão —, cujo texto teria sido elaborado pela assessoria do próprio Master, e não por seu gabinete; ele chegou a reapresentar a proposta em 2026, após o banco ser liquidado pelo Banco Central. Do lado do BRB: segundo fontes do governo do DF, teria apadrinhado a indicação de Paulo Henrique Costa para a presidência do banco e aproximado Vorcaro de Ibaneis Rocha — o que a defesa do senador nega. A PF investiga supostas vantagens recebidas, como pagamentos mensais e uso de imóvel de luxo.',
         photo:'' }
     ];
     const connections = [
@@ -676,7 +679,9 @@
       { id:'c25', from:'p16', to:'p7', label:'apoio à candidatura presidencial (família)' },
       { id:'c26', from:'p4', to:'p17', label:'vínculo familiar (pai e filho)' },
       { id:'c27', from:'p7', to:'p17', label:'vínculo familiar (irmãos)' },
-      { id:'c28', from:'p6', to:'p18', label:'elogio público — "maior prefeito da história de SP"' }
+      { id:'c28', from:'p6', to:'p18', label:'elogio público — "maior prefeito da história de SP"' },
+      { id:'c29', from:'p19', to:'p1', label:'aliado político / articulou a "emenda Master" (FGC R$250 mil → R$1 mi)' },
+      { id:'c30', from:'p19', to:'p2', label:'articulação no BRB (indicou presidente do banco; defesa nega)' }
     ];
     return { people, connections };
   }
