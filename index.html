@@ -487,7 +487,7 @@
   // ---------- STORAGE (localStorage — works standalone on any hosting) ----------
   const STORAGE_KEY = 'politicos-escandalosos-data-v1';
   const VERSION_KEY = 'politicos-escandalosos-seed-version';
-  const CURRENT_SEED_VERSION = 3; // bump this whenever canonicalSeed() below gets new people/connections, or when removeDeprecated() changes
+  const CURRENT_SEED_VERSION = 4; // bump this whenever canonicalSeed() below gets new people/connections, or when removeDeprecated() changes
 
   function loadData(){
     try{
@@ -563,6 +563,17 @@
       }
     }
 
+    if(storedVersion < 4){
+      // Atualiza a descrição do Tarcísio para incluir a fala em que chamou
+      // Ricardo Nunes de "maior prefeito da história" de SP, caso o visitante
+      // ainda tenha a versão anterior (e não a tenha editado manualmente).
+      const tarcisio = people.find(p=>p.name.toLowerCase()==='tarcísio de freitas');
+      if(tarcisio && !/ricardo nunes/i.test(tarcisio.desc||'')){
+        tarcisio.desc = 'Governador de São Paulo (Republicanos), disputa a reeleição em 2026. Era visto como o nome preferido do Centrão e do mercado financeiro para a Presidência, mas confirmou apoio irrestrito à candidatura de Flávio Bolsonaro (PL). No debate para o governo de SP, em agosto de 2026, chamou o prefeito Ricardo Nunes (MDB) de "maior prefeito da história" da cidade — elogio que provocou reação da plateia.';
+        added = true;
+      }
+    }
+
     try{ localStorage.setItem(VERSION_KEY, String(CURRENT_SEED_VERSION)); }catch(e){}
     if(added) saveData();
   }
@@ -599,7 +610,7 @@
         desc:'Ex-deputado federal (PL-SP), filho de Jair Bolsonaro. Está nos Estados Unidos desde 2025. Perdeu o mandato por excesso de faltas em dezembro de 2025 e, em julho de 2026, anunciou que não vai disputar as eleições de 2026. É réu no STF.',
         photo:'' },
       { id:'p6', name:'Tarcísio de Freitas', party:'Republicanos',
-        desc:'Governador de São Paulo (Republicanos), disputa a reeleição em 2026. Era visto como o nome preferido do Centrão e do mercado financeiro para a Presidência, mas confirmou apoio irrestrito à candidatura de Flávio Bolsonaro (PL).',
+        desc:'Governador de São Paulo (Republicanos), disputa a reeleição em 2026. Era visto como o nome preferido do Centrão e do mercado financeiro para a Presidência, mas confirmou apoio irrestrito à candidatura de Flávio Bolsonaro (PL). No debate para o governo de SP, em agosto de 2026, chamou o prefeito Ricardo Nunes (MDB) de "maior prefeito da história" da cidade — elogio que provocou reação da plateia.',
         photo:'' },
       { id:'p7', name:'Flávio Bolsonaro', party:'PL',
         desc:'Senador pelo Rio de Janeiro (PL), filho mais velho de Jair Bolsonaro. Escolhido pelo pai como candidato do PL à Presidência em 2026. Alvo de escândalo após vazamento de áudio pedindo dinheiro a Daniel Vorcaro para financiar o filme "Dark Horse". Também é réu histórico no caso "rachadinha": acusado de desviar salários de assessores fantasmas na Assembleia Legislativa do Rio (2007–2018), com o ex-motorista Fabrício Queiroz apontado como operador do esquema, incluindo suposta lavagem de dinheiro via uma loja de chocolates.',
@@ -633,6 +644,9 @@
         photo:'' },
       { id:'p17', name:'Renan Bolsonaro', party:'PL',
         desc:'Nome de urna de Jair Renan Bolsonaro, filho mais novo de Jair Bolsonaro ("filho 04"). Vereador mais votado de Balneário Camboriú (SC) em 2024. Candidato a deputado federal por Santa Catarina em 2026, usando "Jair Bolsonaro" como nome de urna — mesma estratégia adotada em 2024. Declarou patrimônio quatro vezes maior que o de dois anos antes.',
+        photo:'' },
+      { id:'p18', name:'Ricardo Nunes', party:'MDB',
+        desc:'Prefeito de São Paulo (MDB), reeleito em 2024. Assumiu a prefeitura em 2021 após a morte de Bruno Covas, de quem era vice. Aliado de Tarcísio de Freitas (Republicanos), que o chamou de "maior prefeito da história" de SP. Sua gestão acumula controvérsias: em agosto de 2024, o Datafolha apontou apenas 26% de avaliação ótima/boa, com 66% dos paulistanos dizendo que ele fez menos pela cidade do que esperavam. A política de "dispersão" da Cracolândia foi acusada por ONGs e pela Defensoria Pública de truculência e de apenas espalhar o problema — o local chegou a ser cercado por gradis e comparado a um "curral humano". O programa de vigilância Smart Sampa, com até 20 mil câmeras de reconhecimento facial, recebeu recomendação do Ministério Público para ser suspenso por risco de erros e racismo. Falhas de zeladoria (poda de árvores e limpeza de bueiros) e apagões recorrentes deixaram a cidade "nas trevas" durante temporais. A revista Fórum chegou a listar "45 escândalos, investigações e crises" de sua gestão.',
         photo:'' }
     ];
     const connections = [
@@ -661,7 +675,8 @@
       { id:'c24', from:'p4', to:'p16', label:'vínculo familiar (cônjuge)' },
       { id:'c25', from:'p16', to:'p7', label:'apoio à candidatura presidencial (família)' },
       { id:'c26', from:'p4', to:'p17', label:'vínculo familiar (pai e filho)' },
-      { id:'c27', from:'p7', to:'p17', label:'vínculo familiar (irmãos)' }
+      { id:'c27', from:'p7', to:'p17', label:'vínculo familiar (irmãos)' },
+      { id:'c28', from:'p6', to:'p18', label:'elogio público — "maior prefeito da história de SP"' }
     ];
     return { people, connections };
   }
